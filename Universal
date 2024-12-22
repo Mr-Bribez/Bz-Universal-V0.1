@@ -1,0 +1,293 @@
+local player = game.Players.LocalPlayer
+local screenGui
+
+local function createGui()
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 200)
+    frame.Position = UDim2.new(0.5, -100, 0.5, -100)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.Parent = screenGui
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 40)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.Text = "Bz Uni"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 24
+    titleLabel.TextStrokeTransparency = 0.2
+    titleLabel.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = frame
+
+    local versionLabel = Instance.new("TextLabel")
+    versionLabel.Size = UDim2.new(0, 60, 0, 40)
+    versionLabel.Position = UDim2.new(0, 140, 0, 0)
+    versionLabel.Text = "V0.1"
+    versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    versionLabel.TextSize = 18
+    versionLabel.BackgroundTransparency = 1
+    versionLabel.Font = Enum.Font.SourceSans
+    versionLabel.TextStrokeTransparency = 1
+    versionLabel.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+    versionLabel.Parent = frame
+
+    local glow = Instance.new("Frame")
+    glow.Size = UDim2.new(1, 0, 0, 3)
+    glow.Position = UDim2.new(0, 0, 1, -3)
+    glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    glow.BackgroundTransparency = 0.6
+    glow.ZIndex = 0
+    glow.Parent = titleLabel
+
+    local flyButton = Instance.new("TextButton")
+    flyButton.Size = UDim2.new(1, 0, 0, 40)
+    flyButton.Position = UDim2.new(0, 0, 0, 50)
+    flyButton.Text = "Enable Fly (F)"
+    flyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    flyButton.Parent = frame
+
+    local hitboxButton = Instance.new("TextButton")
+    hitboxButton.Size = UDim2.new(1, 0, 0, 40)
+    hitboxButton.Position = UDim2.new(0, 0, 0, 100)
+    hitboxButton.Text = "Hitbox Enhance"
+    hitboxButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    hitboxButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    hitboxButton.Parent = frame
+
+    local espButton = Instance.new("TextButton")
+    espButton.Size = UDim2.new(1, 0, 0, 40)
+    espButton.Position = UDim2.new(0, 0, 0, 150)
+    espButton.Text = "Box ESP"
+    espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    espButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    espButton.Parent = frame
+
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function updateDrag(input)
+        if dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end
+
+    frame.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateDrag(input)
+        end
+    end)
+
+    local flying = false
+    local canFly = false
+    local speed = 50
+    local ascendSpeed = 20
+    local bodyVelocity = nil
+    local bodyGyro = nil
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+
+    local function startFlying()
+        if flying then return end
+        flying = true
+
+        humanoid.PlatformStand = true
+
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(500000, 500000, 500000)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = rootPart
+
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
+        bodyGyro.CFrame = rootPart.CFrame
+        bodyGyro.Parent = rootPart
+
+        RunService.RenderStepped:Connect(function(_, dt)
+            if flying then
+                local moveDirection = Vector3.zero
+                local camera = workspace.CurrentCamera
+                local lookVector = camera.CFrame.LookVector
+                local rightVector = camera.CFrame.RightVector
+
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveDirection = moveDirection + lookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveDirection = moveDirection - lookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - rightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveDirection = moveDirection + rightVector
+                end
+
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    bodyVelocity.Velocity = Vector3.new(moveDirection.X * speed, ascendSpeed, moveDirection.Z * speed)
+                elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    bodyVelocity.Velocity = Vector3.new(moveDirection.X * speed, -ascendSpeed, moveDirection.Z * speed)
+                else
+                    bodyVelocity.Velocity = Vector3.new(moveDirection.X * speed, 0, moveDirection.Z * speed)
+                end
+            end
+        end)
+    end
+
+    local function stopFlying()
+        if not flying then return end
+        flying = false
+
+        bodyVelocity:Destroy()
+        bodyGyro:Destroy()
+
+        humanoid.PlatformStand = false
+    end
+
+    flyButton.MouseButton1Click:Connect(function()
+        if not canFly then
+            canFly = true
+            flyButton.Text = "Disable Fly (F)"
+        else
+            canFly = false
+            flyButton.Text = "Enable Fly (F)"
+            stopFlying()  -- Ensure flying is stopped when the button is turned off
+        end
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+
+        if input.KeyCode == Enum.KeyCode.F and canFly then
+            if flying then
+                stopFlying()
+            else
+                startFlying()
+            end
+        end
+    end)
+
+    local function enlargeHitbox(player)
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            if not rootPart:FindFirstChild("HitboxEnlarged") then
+                local originalSize = rootPart.Size
+                rootPart.Size = originalSize * 6
+                rootPart.Transparency = 0.7
+                rootPart.CanCollide = false
+                local marker = Instance.new("BoolValue")
+                marker.Name = "HitboxEnlarged"
+                marker.Parent = rootPart
+            end
+        end
+    end
+
+    local function updateHitboxes()
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                enlargeHitbox(player)
+            end
+        end
+    end
+
+    hitboxButton.MouseButton1Click:Connect(function()
+        if hitboxButton.Text == "Hitbox Enhance" then
+            hitboxButton.Text = "Hitbox Enhance"
+            game:GetService("RunService").Heartbeat:Connect(updateHitboxes)
+        else
+            hitboxButton.Text = "Hitbox Enhance"
+            game:GetService("RunService").Heartbeat:Disconnect(updateHitboxes)
+        end
+    end)
+
+    local function create2DBox(player)
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            if not rootPart:FindFirstChild("ESP2DBox") then
+                local billboardGui = Instance.new("BillboardGui")
+                billboardGui.Name = "ESP2DBox"
+                billboardGui.Adornee = rootPart
+                billboardGui.AlwaysOnTop = true
+                billboardGui.Size = UDim2.new(4, 0, 7, 0)
+                billboardGui.StudsOffset = Vector3.new(0, 0, 0)
+                billboardGui.Parent = rootPart
+
+                local function createLine(name, size, position)
+                    local line = Instance.new("Frame")
+                    line.Name = name
+                    line.Size = size
+                    line.Position = position
+                    line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    line.BorderSizePixel = 0
+                    line.Parent = billboardGui
+                end
+
+                createLine("Top", UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 0, 0))
+                createLine("Bottom", UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 1, -2))
+                createLine("Left", UDim2.new(0, 2, 1, 0), UDim2.new(0, 0, 0, 0))
+                createLine("Right", UDim2.new(0, 2, 1, 0), UDim2.new(1, -2, 0, 0))
+            end
+        end
+    end
+
+    local function updateESP()
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                create2DBox(player)
+            end
+        end
+    end
+
+    espButton.MouseButton1Click:Connect(function()
+        if espButton.Text == "Box ESP" then
+            espButton.Text = "Box ESP"
+            game:GetService("RunService").Heartbeat:Connect(updateESP)
+        else
+            espButton.Text = "Box ESP"
+            game:GetService("RunService").Heartbeat:Disconnect(updateESP)
+        end
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.RightControl then
+            frame.Visible = not frame.Visible
+        end
+    end)
+end
+
+player.CharacterAdded:Connect(function()
+    -- Make sure to destroy the existing GUI if it's there
+    if screenGui then
+        screenGui:Destroy()
+    end
+    -- Create the GUI again
+    createGui()
+end)
+
+if player.Character then
+    createGui()
+end
